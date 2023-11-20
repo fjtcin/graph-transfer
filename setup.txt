@@ -1,0 +1,8 @@
+conda create -n kdprompt python=3.10
+conda activate kdprompt
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install -c dglteam/label/cu118 dgl
+conda install -c conda-forge ogb
+conda install category_encoders pyyaml
+conda install -c conda-forge googledrivedownloader
+conda install pyg -c pyg
