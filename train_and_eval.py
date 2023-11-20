@@ -17,7 +17,7 @@ def train(model, data, feats, labels, criterion, optimizer, idx_train, lamb=1):
     model.train()
 
     # Compute loss and prediction
-    logits = model(data, feats * model.p)
+    logits = model(data, feats @ model.p)
     # out = logits.log_softmax(dim=1)
     loss = criterion(logits[idx_train], model.prompts, labels[idx_train])
     loss_val = loss.item()
@@ -43,7 +43,7 @@ def train_sage(model, dataloader, feats, labels, criterion, optimizer, lamb=1):
         batch_labels = labels[output_nodes]
 
         # Compute loss and prediction
-        logits = model(blocks, batch_feats * model.p)
+        logits = model(blocks, batch_feats @ model.p)
         # out = logits.log_softmax(dim=1)
         loss = criterion(logits, model.prompts, batch_labels)
         total_loss += loss.item()
@@ -73,7 +73,7 @@ def train_mini_batch(model, feats, labels, batch_size, criterion, optimizer, lam
     total_loss = 0
     for i in range(num_batches):
         # No graph needed for the forward function
-        logits = model(None, feats[idx_batch[i]] * model.p)
+        logits = model(None, feats[idx_batch[i]] @ model.p)
 
         loss = criterion(logits, model.prompts, labels[idx_batch[i]])
         total_loss += loss.item()
@@ -93,7 +93,7 @@ def evaluate(model, data, feats, labels, criterion, evaluator, idx_eval=None):
     """
     model.eval()
     with torch.no_grad():
-        logits = model.inference(data, feats * model.p)
+        logits = model.inference(data, feats @ model.p)
         # out = logits.log_softmax(dim=1)
         if idx_eval is None:
             loss = criterion(logits, model.prompts, labels)
@@ -119,7 +119,7 @@ def evaluate_mini_batch(
         num_batches = int(np.ceil(len(feats) / batch_size))
         out_list = []
         for i in range(num_batches):
-            logits = model.inference(None, feats[batch_size * i : batch_size * (i + 1)] * model.p)
+            logits = model.inference(None, feats[batch_size * i : batch_size * (i + 1)] @ model.p)
             # out = logits.log_softmax(dim=1)
             out_list.append(logits)
 

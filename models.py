@@ -364,7 +364,7 @@ class Model(nn.Module):
         elif "SAGE" in conf["model_name"]:
             self.encoder = SAGE(
                 num_layers=conf["num_layers"],
-                input_dim=conf["feat_dim"],
+                input_dim=128,
                 hidden_dim=conf["hidden_dim"],
                 output_dim=conf["prompts_dim"],
                 dropout_ratio=conf["dropout_ratio"],

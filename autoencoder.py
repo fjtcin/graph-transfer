@@ -121,37 +121,37 @@ def run(args):
     dataset = Planetoid(args.data_path, args.dataset, transform=T.ToDevice(device))
     data = dataset[0]
 
-    model = SemiSupervisedAutoencoder(data.x.size(1), data.y.max().item()+1, args.dropout_autoencoder, args.dropout_MLP).to(device)
-    criterion = CombinedLoss(args.lamb)
-    optimizer = Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
-    evaluator = AccuracyEvaluator()
+    # model = SemiSupervisedAutoencoder(data.x.size(1), data.y.max().item()+1, args.dropout_autoencoder, args.dropout_MLP).to(device)
+    # criterion = CombinedLoss(args.lamb)
+    # optimizer = Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    # evaluator = AccuracyEvaluator()
 
-    best_score_val, count = 0, 0
-    for epoch in range(1, args.max_epoch + 1):
-        train(model, data.x[data.train_mask], data.y[data.train_mask], criterion, optimizer)
-        if epoch % args.eval_interval == 0:
-            loss_val, score_val = eval(model, data.x[data.val_mask], data.y[data.val_mask], criterion, evaluator)
-            if score_val >= best_score_val:
-                best_score_val = score_val
-                state = copy.deepcopy(model.state_dict())
-                count = 0
-            else:
-                count += 1
-            if count == args.patience:
-                break
+    # best_score_val, count = 0, 0
+    # for epoch in range(1, args.max_epoch + 1):
+    #     train(model, data.x[data.train_mask], data.y[data.train_mask], criterion, optimizer)
+    #     if epoch % args.eval_interval == 0:
+    #         loss_val, score_val = eval(model, data.x[data.val_mask], data.y[data.val_mask], criterion, evaluator)
+    #         if score_val >= best_score_val:
+    #             best_score_val = score_val
+    #             state = copy.deepcopy(model.state_dict())
+    #             count = 0
+    #         else:
+    #             count += 1
+    #         if count == args.patience:
+    #             break
 
-    model.load_state_dict(state)
-    loss_test, score_test = eval(model, data.x[data.test_mask], data.y[data.test_mask], criterion, evaluator)
-    print(f"loss: {loss_test:.4f}, score: {score_test:.4f}")
-    model.eval()
-    with torch.no_grad():
-        z = model.encoder(data.x)
+    # model.load_state_dict(state)
+    # loss_test, score_test = eval(model, data.x[data.test_mask], data.y[data.test_mask], criterion, evaluator)
+    # print(f"loss: {loss_test:.4f}, score: {score_test:.4f}")
+    # model.eval()
+    # with torch.no_grad():
+    #     z = model.encoder(data.x)
 
     edge_list = data.edge_index.numpy(force=True)
     ones = np.ones(data.num_edges)
     adj_matrix = ss.csr_matrix((ones, (edge_list[0], edge_list[1])))
 
-    sparse_graph = SparseGraph(adj_matrix, attr_matrix=z.numpy(force=True), labels=data.y.numpy(force=True))
+    sparse_graph = SparseGraph(adj_matrix, attr_matrix=data.x.numpy(force=True), labels=data.y.numpy(force=True))
     save_sparse_graph_to_npz(f'data/{args.dataset}.npz', sparse_graph)
 
 
