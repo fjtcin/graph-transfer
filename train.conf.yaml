@@ -279,7 +279,7 @@ ogbn-arxiv:
     learning_rate: 0.01
     weight_decay: 0
     norm_type: layer
-    fan_out: 5,10,15
+    fan_out: 15,10,5
 
   GA1SAGE:
     num_layers: 3

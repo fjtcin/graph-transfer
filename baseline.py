@@ -6,7 +6,7 @@ from torch import optim
 from torch import nn
 from pathlib import Path
 from models import Model
-from criterion import CosineSimilarityLoss
+from criterion import BaselineLoss
 from dataloader import load_data
 from utils import (
     get_logger,
@@ -14,7 +14,6 @@ from utils import (
     set_seed,
     get_training_config,
     check_writable,
-    check_readable,
     compute_min_cut_loss,
     graph_split,
     feature_prop,
@@ -51,12 +50,6 @@ def get_args():
         help="transductive or inductive",
     )
     parser.add_argument(
-        "--upstream_exp_setting",
-        type=str,
-        default="tran",
-        choices=["tran", "ind"],
-    )
-    parser.add_argument(
         "--eval_interval", type=int, default=1, help="Evaluate once per how many epochs"
     )
     parser.add_argument(
@@ -67,7 +60,6 @@ def get_args():
 
     """Dataset"""
     parser.add_argument("--dataset", type=str, default="cora", help="Dataset")
-    parser.add_argument("--dataset_base", type=str, default="ogbn-arxiv", help="Dataset base")
     parser.add_argument("--data_path", type=str, default="./data", help="Path to data")
     parser.add_argument(
         "--split_idx",
@@ -84,15 +76,6 @@ def get_args():
         help="Path to model configeration",
     )
     parser.add_argument("--model", type=str, default="SAGE")
-    parser.add_argument(
-        "--prompts_dim", type=int, default=256, help="Model prompts dimensions"
-    )
-    parser.add_argument(
-        "--feat_dim", type=int, default=128, help="Model prompts dimensions"
-    )
-    parser.add_argument(
-        "--dataset_base_prompts", type=int, default=40, help="Number of prompts in dataset_base"
-    )
 
     """Optimization"""
     parser.add_argument(
@@ -113,11 +96,6 @@ def get_args():
         help="add white noise to features for analysis, value in [0, 1] for noise level",
     )
     parser.add_argument(
-        "--upstream_feature_noise",
-        type=float,
-        default=0,
-    )
-    parser.add_argument(
         "--split_rate",
         type=float,
         default=0.2,
@@ -133,11 +111,6 @@ def get_args():
         type=int,
         default=0,
         help="Augment node futures by aggregating feature_aug_k-hop neighbor features",
-    )
-    parser.add_argument(
-        "--upstream_feature_aug_k",
-        type=int,
-        default=0,
     )
 
     args = parser.parse_args()
@@ -159,26 +132,18 @@ def run(args):
     else:
         device = "cpu"
 
-    args.model_path = args.output_path  # Path to load the model
-
     if args.feature_noise != 0:
         args.output_path = args.output_path + f"/noise_{args.feature_noise}"
 
-    if args.upstream_feature_noise != 0:
-        args.model_path = args.model_path + f"/noise_{args.upstream_feature_noise}"
-
     if args.feature_aug_k > 0:
         args.output_path = args.output_path + f"/aug_hop_{args.feature_aug_k}"
-
-    if args.upstream_feature_aug_k > 0:
-        args.model_path = args.model_path + f"/aug_hop_{args.upstream_feature_aug_k}"
 
     if args.exp_setting == "tran":
         output_dir = Path.cwd().joinpath(
             args.output_path,
             "transductive",
             args.dataset,
-            f"{args.dataset_base}_{args.model}",
+            args.model,
             f"seed_{args.seed}",
         )
     else:
@@ -187,36 +152,15 @@ def run(args):
             "inductive",
             f"split_rate_{args.split_rate}",
             args.dataset,
-            f"{args.dataset_base}_{args.model}",
+            args.model,
             f"seed_{args.seed}",
         )
     args.output_dir = output_dir
 
-    if args.upstream_exp_setting == "tran":
-        model_dir = Path.cwd().joinpath(
-            args.model_path,
-            "transductive",
-            args.dataset_base,
-            args.model,
-            f"seed_{args.seed}",
-        )
-    else:
-        model_dir = Path.cwd().joinpath(
-            args.model_path,
-            "inductive",
-            f"split_rate_{args.split_rate}",
-            args.dataset_base,
-            args.model,
-            f"seed_{args.seed}",
-        )
-
     check_writable(output_dir, overwrite=False)
-    check_readable(model_dir)
-
     logger = get_logger(output_dir.joinpath("log"), args.console_log, args.log_level)
-    logger.info(f"model_dir: {model_dir}")
 
-    """ Load data and model config"""
+    """ Load data """
     g, labels, idx_train, idx_val, idx_test = load_data(
         args.dataset,
         args.data_path,
@@ -226,8 +170,9 @@ def run(args):
     logger.info(f"Total {g.number_of_nodes()} nodes, {g.number_of_edges()} edges.")
 
     feats = g.ndata["feat"]
+    args.feat_dim = g.ndata["feat"].shape[1]
     label_dim = labels.max().item() + 1
-    labels = nn.functional.one_hot(labels).float()
+    args.prompts_dim = label_dim
 
     if 0 < args.feature_noise <= 1:
         feats = (
@@ -237,28 +182,20 @@ def run(args):
     """ Model config """
     conf = {}
     if args.model_config_path is not None:
-        conf = get_training_config(
-            args.model_config_path, f"{f'GA{args.upstream_feature_aug_k}' if args.upstream_feature_aug_k else ''}{args.model}_{args.dataset_base}", args.dataset
-        )
+        conf = get_training_config(args.model_config_path, f"{f'GA{args.feature_aug_k}' if args.feature_aug_k else ''}{args.model}", args.dataset)
     conf = dict(args.__dict__, **conf)
     conf["device"] = device
     logger.info(f"conf: {conf}")
 
     """ Model init """
     model = Model(conf)
-    model.prompts = torch.nn.Parameter(torch.empty(conf["dataset_base_prompts"], conf["prompts_dim"]).to(device))
-    model.p = torch.nn.Parameter(torch.empty(conf["feat_dim"], conf["feat_dim"]).to(device))
-    model.load_state_dict(torch.load(model_dir / "model.pth"))
-    for param in model.parameters():
-        param.requires_grad = False
-    model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
-    model.p = torch.nn.Parameter(torch.randn(g.ndata["feat"].shape[1], conf["feat_dim"]).to(device))
-    logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
+    model.prompts = torch.empty(0)
+    model.p = torch.eye(conf["feat_dim"], conf["feat_dim"]).to(device)
     optimizer = optim.Adam(
         model.parameters(), lr=conf["learning_rate"], weight_decay=conf["weight_decay"]
     )
-    criterion = CosineSimilarityLoss()
-    evaluator = get_evaluator(conf["dataset"])
+    criterion = BaselineLoss()
+    evaluator = get_evaluator(conf["dataset"], True)
 
     """ Data split and run """
     loss_and_score = []
@@ -321,7 +258,7 @@ def run(args):
         # Model
         torch.save(model.state_dict(), output_dir.joinpath("model.pth"))
 
-    """ Saving min-cut loss"""
+    """ Saving min-cut loss """
     if args.exp_setting == "tran" and args.compute_min_cut:
         min_cut = compute_min_cut_loss(g, out)
         with open(output_dir.parent.joinpath("min_cut_loss"), "a+") as f:

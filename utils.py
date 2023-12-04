@@ -130,35 +130,16 @@ def graph_split(idx_train, idx_val, idx_test, rate, seed):
     return obs_idx_train, obs_idx_val, obs_idx_test, idx_obs, idx_test_ind
 
 
-def get_evaluator(dataset):
-    if dataset in CPF_data + NonHom_data + BGNN_data:
-
-        def evaluator(out, labels):
-            pred = out.argmax(1)
-            return pred.eq(labels).float().mean().item()
-
-    elif dataset in OGB_data:
-        ogb_evaluator = Evaluator(dataset)
-
-        def evaluator(out, labels):
-            pred = out.argmax(1, keepdim=True)
-            input_dict = {"y_true": labels.unsqueeze(1), "y_pred": pred}
-            return ogb_evaluator.eval(input_dict)["acc"]
-
-    else:
-        raise ValueError("Unknown dataset")
-
-    return evaluator
-
-
-def get_evaluator(dataset):
+def get_evaluator(dataset, baseline=False):
     def evaluator(logits, prompts, labels):
         logits_n = nn.functional.normalize(logits)
         prompts_n = nn.functional.normalize(prompts)
-        pred = (logits_n @ prompts_n.mT).argmax(dim=1)
+        pred = (logits_n @ prompts.mT).argmax(dim=1)
         return pred.eq(labels.argmax(dim=1)).float().mean().item()
-
-    return evaluator
+    def evaluator_balseline(logits, prompts, labels):
+        pred = logits.argmax(dim=1)
+        return pred.eq(labels).float().mean().item()
+    return evaluator_balseline if baseline else evaluator
 
 
 def compute_min_cut_loss(g, out):

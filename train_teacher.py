@@ -75,7 +75,7 @@ def get_args():
         default="./train.conf.yaml",
         help="Path to model configeration",
     )
-    parser.add_argument("--teacher", type=str, default="SAGE", help="Teacher model")
+    parser.add_argument("--model", type=str, default="SAGE")
     parser.add_argument(
         "--prompts_dim", type=int, default=256, help="Model prompts dimensions"
     )
@@ -146,7 +146,7 @@ def run(args):
             args.output_path,
             "transductive",
             args.dataset,
-            args.teacher,
+            args.model,
             f"seed_{args.seed}",
         )
     else:
@@ -155,7 +155,7 @@ def run(args):
             "inductive",
             f"split_rate_{args.split_rate}",
             args.dataset,
-            args.teacher,
+            args.model,
             f"seed_{args.seed}",
         )
     args.output_dir = output_dir
@@ -185,7 +185,7 @@ def run(args):
     """ Model config """
     conf = {}
     if args.model_config_path is not None:
-        conf = get_training_config(args.model_config_path, f"{f'GA{args.feature_aug_k}' if args.feature_aug_k else ''}{args.teacher}", args.dataset)
+        conf = get_training_config(args.model_config_path, f"{f'GA{args.feature_aug_k}' if args.feature_aug_k else ''}{args.model}", args.dataset)
     conf = dict(args.__dict__, **conf)
     conf["device"] = device
     logger.info(f"conf: {conf}")
@@ -193,7 +193,7 @@ def run(args):
     """ Model init """
     model = Model(conf)
     model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
-    model.p = torch.nn.Parameter(torch.eye(conf["feat_dim"], 128).to(device), requires_grad=False)
+    model.p = torch.nn.Parameter(torch.eye(conf["feat_dim"], conf["feat_dim"]).to(device), requires_grad=False)
     logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
     optimizer = optim.Adam(
         model.parameters(), lr=conf["learning_rate"], weight_decay=conf["weight_decay"]
@@ -252,12 +252,6 @@ def run(args):
         score_lst = [score_test_tran, score_test_ind]
 
     logger.info(f"# params {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
-
-    """ Saving teacher outputs """
-    out_np = out.numpy(force=True)
-    prompts_np = model.prompts.numpy(force=True)
-    np.savez(output_dir.joinpath("out"), out_np)
-    np.savez(output_dir.joinpath("prompts"), prompts_np)
 
     """ Saving loss curve and model """
     if args.save_results:
