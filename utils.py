@@ -8,7 +8,6 @@ import os
 import yaml
 import shutil
 from datetime import datetime
-from ogb.nodeproppred import Evaluator
 import dgl
 from dgl import function as fn
 
@@ -133,7 +132,6 @@ def graph_split(idx_train, idx_val, idx_test, rate, seed):
 def get_evaluator(dataset, baseline=False):
     def evaluator(logits, prompts, labels):
         logits_n = nn.functional.normalize(logits)
-        prompts_n = nn.functional.normalize(prompts)
         pred = (logits_n @ prompts.mT).argmax(dim=1)
         return pred.eq(labels.argmax(dim=1)).float().mean().item()
     def evaluator_balseline(logits, prompts, labels):

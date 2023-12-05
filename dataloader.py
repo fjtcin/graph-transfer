@@ -72,7 +72,8 @@ def load_ogb_data(dataset, dataset_path):
 
 
 def load_cpf_data(dataset, dataset_path):
-    dataset = dgl.data.CitationGraphDataset(dataset, dataset_path, verbose=False)
+    # dataset = dgl.data.CitationGraphDataset(dataset, dataset_path, verbose=False)
+    dataset, _ = dgl.load_graphs(f'{dataset_path}/{dataset}.bin')
     g = dataset[0]
     assert has_all_reversed_edges(g) and has_self_loop_every_node(g) and is_not_multigraph(g), 'failed graph check'
     return g, g.ndata['label'], np.where(g.ndata['train_mask'])[0], np.where(g.ndata['val_mask'])[0], np.where(g.ndata['test_mask'])[0]

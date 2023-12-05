@@ -190,7 +190,7 @@ def run(args):
     """ Model init """
     model = Model(conf)
     model.prompts = torch.empty(0)
-    model.p = torch.eye(conf["feat_dim"], conf["feat_dim"]).to(device)
+    model.p = torch.ones(1, conf["feat_dim"]).to(device)
     optimizer = optim.Adam(
         model.parameters(), lr=conf["learning_rate"], weight_decay=conf["weight_decay"]
     )

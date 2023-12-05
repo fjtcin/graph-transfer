@@ -96,12 +96,12 @@ def get_args():
 
     """Optimization"""
     parser.add_argument(
-        "--max_epoch", type=int, default=1000, help="Evaluate once per how many epochs"
+        "--max_epoch", type=int, default=500, help="Evaluate once per how many epochs"
     )
     parser.add_argument(
         "--patience",
         type=int,
-        default=100,
+        default=50,
         help="Early stop is the score on validation set does not improve for how many epochs",
     )
 
@@ -247,12 +247,12 @@ def run(args):
     """ Model init """
     model = Model(conf)
     model.prompts = torch.nn.Parameter(torch.empty(conf["dataset_base_prompts"], conf["prompts_dim"]).to(device))
-    model.p = torch.nn.Parameter(torch.empty(conf["feat_dim"], conf["feat_dim"]).to(device))
+    model.p = torch.nn.Parameter(torch.empty(1, conf["feat_dim"]).to(device))
     model.load_state_dict(torch.load(model_dir / "model.pth"))
     for param in model.parameters():
         param.requires_grad = False
     model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
-    model.p = torch.nn.Parameter(torch.randn(g.ndata["feat"].shape[1], conf["feat_dim"]).to(device))
+    model.p = torch.nn.Parameter(torch.ones(1, conf["feat_dim"]).to(device))
     logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
     optimizer = optim.Adam(
         model.parameters(), lr=conf["learning_rate"], weight_decay=conf["weight_decay"]
