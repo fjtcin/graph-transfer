@@ -73,8 +73,9 @@ def load_ogb_data(dataset, dataset_path):
 
 def load_cpf_data(dataset, dataset_path):
     # dataset = dgl.data.CitationGraphDataset(dataset, dataset_path, verbose=False)
-    dataset, _ = dgl.load_graphs(f'{dataset_path}/{dataset}.bin')
-    g = dataset[0]
+    data, _ = dgl.load_graphs(f'{dataset_path}/{dataset}.bin')
+    g = data[0]
+    g = g.remove_self_loop().add_self_loop()
     assert has_all_reversed_edges(g) and has_self_loop_every_node(g) and is_not_multigraph(g), 'failed graph check'
     return g, g.ndata['label'], np.where(g.ndata['train_mask'])[0], np.where(g.ndata['val_mask'])[0], np.where(g.ndata['test_mask'])[0]
 
@@ -324,14 +325,8 @@ def has_all_reversed_edges(g):
 
 
 def has_self_loop_every_node(g):
-    # Get the list of edges
-    src, dst = g.edges()
-
-    # Check if each node has a self-loop
-    nodes_with_self_loop = set(src.tolist()) & set(dst.tolist())
-    all_nodes = set(range(g.number_of_nodes()))
-
-    return nodes_with_self_loop == all_nodes
+    has_self_loops = g.has_edges_between(g.nodes(), g.nodes())
+    return has_self_loops.sum().item() == g.num_nodes()
 
 
 def is_not_multigraph(g):

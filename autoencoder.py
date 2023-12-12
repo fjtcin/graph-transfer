@@ -17,8 +17,8 @@ parser.add_argument('--variational', action='store_true')
 parser.add_argument('--linear', action='store_true')
 parser.add_argument('--dataset', type=str, default='cora',
                     choices=['cora', 'citeseer', 'pubmed'])
-parser.add_argument('--epochs', type=int, default=10000)
-parser.add_argument('--patience', type=int, default=2000)
+parser.add_argument('--epochs', type=int, default=1000)
+parser.add_argument('--patience', type=int, default=100)
 args = parser.parse_args()
 
 if torch.cuda.is_available():
@@ -31,7 +31,7 @@ transform = T.Compose([
     T.ToDevice(device),
 ])
 path = Path('data')
-dataset = Planetoid(path, args.dataset, transform=transform)
+dataset = Planetoid(path, args.dataset, transform=transform, split='public', num_train_per_class=10)
 data = dataset[0]
 split_edges_transform = T.RandomLinkSplit(num_val=0, num_test=0.1, is_undirected=True,
                         split_labels=True, add_negative_train_samples=False)
@@ -117,8 +117,6 @@ best_epoch, best_score_val, count = 0, [0, 0], 0
 for epoch in range(1, args.epochs + 1):
     loss = train()
     auc, ap = test(test_data)
-    if epoch % 100 == 0:
-        print(f'Epoch: {epoch:03d}, AUC: {auc:.4f}, AP: {ap:.4f}')
     score_val = [auc, ap]
     if all(x > y for x, y in zip(score_val, best_score_val)):
         best_epoch = epoch
@@ -129,6 +127,7 @@ for epoch in range(1, args.epochs + 1):
         count += 1
     if count == args.patience:
         break
+print(f'Best valid model at epoch: {best_epoch}, AUC: {best_score_val[0]:.4f}, AP: {best_score_val[1]:.4f}')
 
 
 model.load_state_dict(state)

@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from torch import nn
+import torch.nn.functional as F
 import logging
 import pytz
 import random
@@ -131,9 +131,9 @@ def graph_split(idx_train, idx_val, idx_test, rate, seed):
 
 def get_evaluator(dataset, baseline=False):
     def evaluator(logits, prompts, labels):
-        logits_n = nn.functional.normalize(logits)
+        logits_n = F.normalize(logits)
         pred = (logits_n @ prompts.mT).argmax(dim=1)
-        return pred.eq(labels.argmax(dim=1)).float().mean().item()
+        return pred.eq(labels).float().mean().item()
     def evaluator_balseline(logits, prompts, labels):
         pred = logits.argmax(dim=1)
         return pred.eq(labels).float().mean().item()

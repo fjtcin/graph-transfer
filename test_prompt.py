@@ -96,12 +96,12 @@ def get_args():
 
     """Optimization"""
     parser.add_argument(
-        "--max_epoch", type=int, default=500, help="Evaluate once per how many epochs"
+        "--max_epoch", type=int, default=1000, help="Evaluate once per how many epochs"
     )
     parser.add_argument(
         "--patience",
         type=int,
-        default=50,
+        default=100,
         help="Early stop is the score on validation set does not improve for how many epochs",
     )
 
@@ -227,7 +227,6 @@ def run(args):
 
     feats = g.ndata["feat"]
     label_dim = labels.max().item() + 1
-    labels = nn.functional.one_hot(labels).float()
 
     if 0 < args.feature_noise <= 1:
         feats = (
