@@ -2,8 +2,8 @@
 
 ```bash
 python baseline.py --dataset cora
-python train_teacher.py --dataset ogbn-arxiv --prompts_dim 64 --save_results --seed
-python test_prompt.py --dataset cora --prompts_dim 64 --seed
+python train_teacher.py --dataset ogbn-arxiv --prompts_dim 128 --save_results --seed
+python test_prompt.py --dataset cora --prompts_dim 128 --seed
 ```
 
 different model hyper-parameters for student and prompt

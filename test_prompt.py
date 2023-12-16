@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import torch
 from torch import optim
-from torch import nn
+import torch.nn.functional as F
 from pathlib import Path
 from models import Model
 from criterion import CosineSimilarityLoss
@@ -86,9 +86,6 @@ def get_args():
     parser.add_argument("--model", type=str, default="SAGE")
     parser.add_argument(
         "--prompts_dim", type=int, default=256, help="Model prompts dimensions"
-    )
-    parser.add_argument(
-        "--dataset_base_prompts", type=int, default=40, help="Number of prompts in dataset_base"
     )
 
     """Optimization"""
@@ -243,12 +240,12 @@ def run(args):
 
     """ Model init """
     model = Model(conf)
-    model.prompts = torch.nn.Parameter(torch.empty(conf["dataset_base_prompts"], conf["prompts_dim"]).to(device))
+    model.prompts = torch.nn.Parameter(torch.load(f"{args.data_path}/{args.dataset_base}_prototypes.pt").to(device))
     model.p = torch.nn.Parameter(torch.empty(1, conf["feat_dim"]).to(device))
     model.load_state_dict(torch.load(model_dir / "model.pth"))
     for param in model.parameters():
         param.requires_grad = False
-    model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
+    model.prompts = torch.nn.Parameter(torch.load(f"{args.data_path}/{args.dataset}_prototypes.pt").to(device))
     model.p = torch.nn.Parameter(torch.ones(1, conf["feat_dim"]).to(device))
     logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
     optimizer = optim.Adam(

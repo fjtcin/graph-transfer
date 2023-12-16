@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import torch
 from torch import optim
-from torch import nn
+import torch.nn.functional as F
 from pathlib import Path
 from models import Model
 from criterion import CosineSimilarityLoss
@@ -191,7 +191,7 @@ def run(args):
 
     """ Model init """
     model = Model(conf)
-    model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
+    model.prompts = torch.nn.Parameter(torch.load(f"{args.data_path}/{args.dataset}_prototypes.pt").to(device))
     model.p = torch.nn.Parameter(torch.ones(1, conf["feat_dim"]).to(device), requires_grad=False)
     logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
     optimizer = optim.Adam(

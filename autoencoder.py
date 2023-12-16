@@ -142,3 +142,10 @@ dgl_graph.ndata['train_mask'] = data.train_mask
 dgl_graph.ndata['val_mask'] = data.val_mask
 dgl_graph.ndata['test_mask'] = data.test_mask
 dgl.save_graphs(f'data/{args.dataset}.bin', [dgl_graph])
+
+# compute the prototypical feature for each class as a torch tensor
+# the prototype should only be computed on the training nodes
+prototypes = torch.zeros(dataset.num_classes, z.shape[1])
+for i in range(dataset.num_classes):
+    prototypes[i] = z[data.train_mask][data.y[data.train_mask] == i].mean(dim=0)
+torch.save(prototypes, f'data/{args.dataset}_prototypes.pt')
