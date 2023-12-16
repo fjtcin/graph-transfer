@@ -170,7 +170,7 @@ def run(args):
     logger.info(f"Total {g.number_of_nodes()} nodes, {g.number_of_edges()} edges.")
 
     feats = g.ndata["feat"]
-    args.feat_dim = g.ndata["feat"].shape[1]
+    args.feat_dim = feats.shape[1]
     label_dim = labels.max().item() + 1
     args.prompts_dim = label_dim
 

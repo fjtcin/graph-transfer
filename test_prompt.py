@@ -88,9 +88,6 @@ def get_args():
         "--prompts_dim", type=int, default=256, help="Model prompts dimensions"
     )
     parser.add_argument(
-        "--feat_dim", type=int, default=128, help="Model prompts dimensions"
-    )
-    parser.add_argument(
         "--dataset_base_prompts", type=int, default=40, help="Number of prompts in dataset_base"
     )
 
@@ -226,6 +223,7 @@ def run(args):
     logger.info(f"Total {g.number_of_nodes()} nodes, {g.number_of_edges()} edges.")
 
     feats = g.ndata["feat"]
+    args.feat_dim = feats.shape[1]
     label_dim = labels.max().item() + 1
 
     if 0 < args.feature_noise <= 1:
