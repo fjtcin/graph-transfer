@@ -19,7 +19,7 @@ def train(model, data, feats, labels, criterion, optimizer, idx_train, lamb=1):
     # Compute loss and prediction
     logits = model(data, feats * model.p)
     # out = logits.log_softmax(dim=1)
-    loss = criterion(logits[idx_train], model.prompts, labels[idx_train])
+    loss = criterion(model, logits[idx_train], labels[idx_train])
     loss_val = loss.item()
 
     loss *= lamb
@@ -45,7 +45,7 @@ def train_sage(model, dataloader, feats, labels, criterion, optimizer, lamb=1):
         # Compute loss and prediction
         logits = model(blocks, batch_feats * model.p)
         # out = logits.log_softmax(dim=1)
-        loss = criterion(logits, model.prompts, batch_labels)
+        loss = criterion(model, logits, batch_labels)
         total_loss += loss.item()
 
         loss *= lamb
@@ -75,7 +75,7 @@ def train_mini_batch(model, feats, labels, batch_size, criterion, optimizer, lam
         # No graph needed for the forward function
         logits = model(None, feats[idx_batch[i]] * model.p)
 
-        loss = criterion(logits, model.prompts, labels[idx_batch[i]])
+        loss = criterion(model, logits, labels[idx_batch[i]])
         total_loss += loss.item()
 
         loss *= lamb
@@ -96,11 +96,11 @@ def evaluate(model, data, feats, labels, criterion, evaluator, idx_eval=None):
         logits = model.inference(data, feats * model.p)
         # out = logits.log_softmax(dim=1)
         if idx_eval is None:
-            loss = criterion(logits, model.prompts, labels)
-            score = evaluator(logits, model.prompts, labels)
+            loss = criterion(model, logits, labels)
+            score = evaluator(model, logits, labels)
         else:
-            loss = criterion(logits[idx_eval], model.prompts, labels[idx_eval])
-            score = evaluator(logits[idx_eval], model.prompts, labels[idx_eval])
+            loss = criterion(model, logits[idx_eval], labels[idx_eval])
+            score = evaluator(model, logits[idx_eval], labels[idx_eval])
     return logits, loss.item(), score
 
 
@@ -126,11 +126,11 @@ def evaluate_mini_batch(
         out_all = torch.cat(out_list)
 
         if idx_eval is None:
-            loss = criterion(out_all, model.prompts, labels)
-            score = evaluator(out_all, model.prompts, labels)
+            loss = criterion(model, out_all, labels)
+            score = evaluator(model, out_all, labels)
         else:
-            loss = criterion(out_all[idx_eval], model.prompts, labels[idx_eval])
-            score = evaluator(out_all[idx_eval], model.prompts, labels[idx_eval])
+            loss = criterion(model, out_all[idx_eval], labels[idx_eval])
+            score = evaluator(model, out_all[idx_eval], labels[idx_eval])
 
     return out_all, loss.item(), score
 
@@ -238,10 +238,10 @@ def run_transductive(
                     model, data_eval, feats, labels, criterion, evaluator, idx_train
                 )
                 # Use criterion & evaluator instead of evaluate to avoid redundant forward pass
-                loss_val = criterion(out[idx_val], model.prompts, labels[idx_val]).item()
-                score_val = evaluator(out[idx_val], model.prompts, labels[idx_val])
-                loss_test = criterion(out[idx_test], model.prompts, labels[idx_test]).item()
-                score_test = evaluator(out[idx_test], model.prompts, labels[idx_test])
+                loss_val = criterion(model, out[idx_val], labels[idx_val]).item()
+                score_val = evaluator(model, out[idx_val], labels[idx_val])
+                loss_test = criterion(model, out[idx_test], labels[idx_test]).item()
+                score_test = evaluator(model, out[idx_test], labels[idx_test])
 
             logger.debug(
                 f"Ep {epoch:3d} | loss: {loss:.4f} | s_train: {score_train:.4f} | s_val: {score_val:.4f} | s_test: {score_test:.4f}"
@@ -279,7 +279,7 @@ def run_transductive(
             model, data_eval, feats, labels, criterion, evaluator, idx_val
         )
 
-    score_test = evaluator(out[idx_test], model.prompts, labels[idx_test])
+    score_test = evaluator(model, out[idx_test], labels[idx_test])
     logger.info(
         f"Best valid model at epoch: {best_epoch: 3d}, score_val: {score_val :.4f}, score_test: {score_test :.4f}"
     )
@@ -439,14 +439,14 @@ def run_inductive(
                 )
                 # Use criterion & evaluator instead of evaluate to avoid redundant forward pass
                 loss_val = criterion(
-                    obs_out[obs_idx_val], model.prompts, obs_labels[obs_idx_val]
+                    model, obs_out[obs_idx_val], obs_labels[obs_idx_val]
                 ).item()
-                score_val = evaluator(obs_out[obs_idx_val], model.prompts, obs_labels[obs_idx_val])
+                score_val = evaluator(model, obs_out[obs_idx_val], obs_labels[obs_idx_val])
                 loss_test_tran = criterion(
-                    obs_out[obs_idx_test], model.prompts, obs_labels[obs_idx_test]
+                    model, obs_out[obs_idx_test], obs_labels[obs_idx_test]
                 ).item()
                 score_test_tran = evaluator(
-                    obs_out[obs_idx_test], model.prompts, obs_labels[obs_idx_test]
+                    model, obs_out[obs_idx_test], obs_labels[obs_idx_test]
                 )
 
                 # Evaluate the inductive part with the full graph
@@ -503,7 +503,7 @@ def run_inductive(
             model, data_eval, feats, labels, criterion, evaluator, idx_test_ind
         )
 
-    score_test_tran = evaluator(obs_out[obs_idx_test], model.prompts, obs_labels[obs_idx_test])
+    score_test_tran = evaluator(model, obs_out[obs_idx_test], obs_labels[obs_idx_test])
     out[idx_obs] = obs_out
     logger.info(
         f"Best valid model at epoch: {best_epoch :3d}, score_val: {score_val :.4f}, score_test_tran: {score_test_tran :.4f}, score_test_ind: {score_test_ind :.4f}"

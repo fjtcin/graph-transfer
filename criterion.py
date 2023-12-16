@@ -7,9 +7,9 @@ class CosineSimilarityLoss(nn.Module):
         super().__init__()
         self.cross_entropy_loss = nn.CrossEntropyLoss()
 
-    def forward(self, logits, prompts, labels):
+    def forward(self, model, logits, labels):
         logits_n = F.normalize(logits)
-        return self.cross_entropy_loss(logits_n @ prompts.mT, labels)
+        return self.cross_entropy_loss(logits_n @ model.prompts.mT, labels)
 
 
 class BaselineLoss(nn.Module):
@@ -17,5 +17,5 @@ class BaselineLoss(nn.Module):
         super().__init__()
         self.cross_entropy_loss = nn.CrossEntropyLoss()
 
-    def forward(self, logits, prompts, labels):
+    def forward(self, model, logits, labels):
         return self.cross_entropy_loss(logits, labels)

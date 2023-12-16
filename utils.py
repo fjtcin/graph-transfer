@@ -23,7 +23,6 @@ def set_seed(seed):
     dgl.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
     torch.use_deterministic_algorithms(True)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
@@ -130,11 +129,11 @@ def graph_split(idx_train, idx_val, idx_test, rate, seed):
 
 
 def get_evaluator(dataset, baseline=False):
-    def evaluator(logits, prompts, labels):
+    def evaluator(model, logits, labels):
         logits_n = F.normalize(logits)
-        pred = (logits_n @ prompts.mT).argmax(dim=1)
+        pred = (logits_n @ model.prompts.mT).argmax(dim=1)
         return pred.eq(labels).float().mean().item()
-    def evaluator_balseline(logits, prompts, labels):
+    def evaluator_balseline(model, logits, labels):
         pred = logits.argmax(dim=1)
         return pred.eq(labels).float().mean().item()
     return evaluator_balseline if baseline else evaluator
