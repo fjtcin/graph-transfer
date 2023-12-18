@@ -16,6 +16,12 @@ cora:
     dropout_ratio: 0
     weight_decay: 0.0005
 
+  GAT_ogbn-arxiv:
+    dropout_ratio: 0.6
+    weight_decay: 0.01
+    num_heads: 8
+    attn_dropout_ratio: 0.3
+
   SAGE_ogbn-arxiv:
     num_layers: 3
     hidden_dim: 256
@@ -242,6 +248,12 @@ ogbn-arxiv:
     weight_decay: 0  # 0.005
     dropout_ratio: 0.3  # 0.6  # 0.2 default
     norm_type: layer
+
+  GAT:
+    dropout_ratio: 0.6
+    weight_decay: 0.01
+    num_heads: 8
+    attn_dropout_ratio: 0.3
 
   GA1MLP:
     num_layers: 3

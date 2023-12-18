@@ -59,6 +59,7 @@ def load_ogb_data(dataset, dataset_path):
 
     g, labels = data[0]
     labels = labels.squeeze()
+    g.ndata["label"] = labels
 
     # Turn the graph to undirected
     if dataset == "ogbn-arxiv":

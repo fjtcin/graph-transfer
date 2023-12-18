@@ -18,8 +18,8 @@ class GAT(nn.Module):
         dropout_ratio,
         activation,
         norm_type,
+        input_drop,
         attn_drop,
-        input_drop=0,
         num_heads=8,
         negative_slope=0.2,
         residual=False,
@@ -39,7 +39,7 @@ class GAT(nn.Module):
                     in_hidden,
                     out_hidden,
                     num_heads,
-                    dropout_ratio,
+                    0,
                     attn_drop,
                     negative_slope,
                     residual
@@ -78,7 +78,7 @@ class GAT(nn.Module):
             h_last = h
 
             h = self.norms[i](h)
-            h = self.activation(h, inplace=True)
+            h = self.activation(h)
             h = self.dropout(h)
 
             if inference:
