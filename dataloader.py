@@ -11,7 +11,6 @@ https://github.com/dmlc/dgl/tree/473d5e0a4c4e4735f1c9dc9d783e0374328cca9a/exampl
 """
 
 import numpy as np
-import scipy.sparse as sp
 import torch
 import dgl
 import os
@@ -77,7 +76,7 @@ def load_cpf_data(dataset, dataset_path):
     g = data[0]
     g = g.remove_self_loop().add_self_loop()
     assert has_all_reversed_edges(g) and has_self_loop_every_node(g) and is_not_multigraph(g), 'failed graph check'
-    return g, g.ndata['label'], np.where(g.ndata['train_mask'])[0], np.where(g.ndata['val_mask'])[0], np.where(g.ndata['test_mask'])[0]
+    return g, g.ndata['label'], g.ndata['train_mask'].nonzero().squeeze(), g.ndata['val_mask'].nonzero().squeeze(), g.ndata['test_mask'].nonzero().squeeze()
 
 
 def load_nonhom_data(dataset, dataset_path, split_idx):
