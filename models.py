@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dgl.nn import GraphConv, SAGEConv, APPNPConv, GATConv
+from GNN.GAT import GAT
 
 
 class MLP(nn.Module):
@@ -199,86 +200,6 @@ class GCN(nn.Module):
         return h_list, h
 
 
-class GAT(nn.Module):
-    def __init__(
-        self,
-        num_layers,
-        input_dim,
-        hidden_dim,
-        output_dim,
-        dropout_ratio,
-        activation,
-        num_heads=8,
-        attn_drop=0.3,
-        negative_slope=0.2,
-        residual=False,
-    ):
-        super(GAT, self).__init__()
-        # For GAT, the number of layers is required to be > 1
-        assert num_layers > 1
-
-        hidden_dim //= num_heads
-        self.num_layers = num_layers
-        self.layers = nn.ModuleList()
-        self.activation = activation
-
-        heads = ([num_heads] * num_layers) + [1]
-        # input (no residual)
-        self.layers.append(
-            GATConv(
-                input_dim,
-                hidden_dim,
-                heads[0],
-                dropout_ratio,
-                attn_drop,
-                negative_slope,
-                False,
-                self.activation,
-            )
-        )
-
-        for l in range(1, num_layers - 1):
-            # due to multi-head, the in_dim = hidden_dim * num_heads
-            self.layers.append(
-                GATConv(
-                    hidden_dim * heads[l - 1],
-                    hidden_dim,
-                    heads[l],
-                    dropout_ratio,
-                    attn_drop,
-                    negative_slope,
-                    residual,
-                    self.activation,
-                )
-            )
-
-        self.layers.append(
-            GATConv(
-                hidden_dim * heads[-2],
-                output_dim,
-                heads[-1],
-                dropout_ratio,
-                attn_drop,
-                negative_slope,
-                residual,
-                None,
-            )
-        )
-
-    def forward(self, g, feats):
-        h = feats
-        h_list = []
-        for l, layer in enumerate(self.layers):
-            # [num_head, node_num, nclass] -> [num_head, node_num*nclass]
-            h = layer(g, h)
-            if l != self.num_layers - 1:
-                h = h.flatten(1)
-                h_list.append(h)
-            else:
-                h = h.mean(1)
-        return h_list, h
-
-
 class APPNP(nn.Module):
     def __init__(
         self,
@@ -344,86 +265,54 @@ class APPNP(nn.Module):
         return h_list, h
 
 
-class Model(nn.Module):
-    """
-    Wrapper of different models
-    """
-
-    def __init__(self, conf):
-        super(Model, self).__init__()
-        self.model_name = conf["model_name"]
-        if "MLP" in conf["model_name"]:
-            self.encoder = MLP(
-                num_layers=conf["num_layers"],
-                input_dim=conf["feat_dim"],
-                hidden_dim=conf["hidden_dim"],
-                output_dim=conf["prompts_dim"],
-                dropout_ratio=conf["dropout_ratio"],
-                norm_type=conf["norm_type"],
-            ).to(conf["device"])
-        elif "SAGE" in conf["model_name"]:
-            self.encoder = SAGE(
-                num_layers=conf["num_layers"],
-                input_dim=conf["feat_dim"],
-                hidden_dim=conf["hidden_dim"],
-                output_dim=conf["prompts_dim"],
-                dropout_ratio=conf["dropout_ratio"],
-                activation=F.relu,
-                norm_type=conf["norm_type"],
-            ).to(conf["device"])
-        elif "GCN" in conf["model_name"]:
-            self.encoder = GCN(
-                num_layers=conf["num_layers"],
-                input_dim=conf["feat_dim"],
-                hidden_dim=conf["hidden_dim"],
-                output_dim=conf["prompts_dim"],
-                dropout_ratio=conf["dropout_ratio"],
-                activation=F.relu,
-                norm_type=conf["norm_type"],
-            ).to(conf["device"])
-        elif "GAT" in conf["model_name"]:
-            self.encoder = GAT(
-                num_layers=conf["num_layers"],
-                input_dim=conf["feat_dim"],
-                hidden_dim=conf["hidden_dim"],
-                output_dim=conf["prompts_dim"],
-                dropout_ratio=conf["dropout_ratio"],
-                activation=F.relu,
-                attn_drop=conf["attn_dropout_ratio"],
-            ).to(conf["device"])
-        elif "APPNP" in conf["model_name"]:
-            self.encoder = APPNP(
-                num_layers=conf["num_layers"],
-                input_dim=conf["feat_dim"],
-                hidden_dim=conf["hidden_dim"],
-                output_dim=conf["prompts_dim"],
-                dropout_ratio=conf["dropout_ratio"],
-                activation=F.relu,
-                norm_type=conf["norm_type"],
-            ).to(conf["device"])
-
-    def forward(self, data, feats):
-        """
-        data: a graph `g` or a `dataloader` of blocks
-        """
-        if "MLP" in self.model_name:
-            return self.encoder(feats)[1]
-        else:
-            return self.encoder(data, feats)[1]
-
-    def forward_fitnet(self, data, feats):
-        """
-        Return a tuple (h_list, h)
-        h_list: intermediate hidden representation
-        h: final output
-        """
-        if "MLP" in self.model_name:
-            return self.encoder(feats)
-        else:
-            return self.encoder(data, feats)
-
-    def inference(self, data, feats):
-        if "SAGE" in self.model_name:
-            return self.encoder.inference(data, feats)
-        else:
-            return self.forward(data, feats)
+def Model(conf):
+    if "MLP" in conf["model_name"]:
+        return MLP(
+            num_layers=conf["num_layers"],
+            input_dim=conf["feat_dim"],
+            hidden_dim=conf["hidden_dim"],
+            output_dim=conf["prompts_dim"],
+            dropout_ratio=conf["dropout_ratio"],
+            norm_type=conf["norm_type"],
+        ).to(conf["device"])
+    elif "SAGE" in conf["model_name"]:
+        return SAGE(
+            num_layers=conf["num_layers"],
+            input_dim=conf["feat_dim"],
+            hidden_dim=conf["hidden_dim"],
+            output_dim=conf["prompts_dim"],
+            dropout_ratio=conf["dropout_ratio"],
+            activation=F.relu,
+            norm_type=conf["norm_type"],
+        ).to(conf["device"])
+    elif "GCN" in conf["model_name"]:
+        return GCN(
+            num_layers=conf["num_layers"],
+            input_dim=conf["feat_dim"],
+            hidden_dim=conf["hidden_dim"],
+            output_dim=conf["prompts_dim"],
+            dropout_ratio=conf["dropout_ratio"],
+            activation=F.relu,
+            norm_type=conf["norm_type"],
+        ).to(conf["device"])
+    elif "GAT" in conf["model_name"]:
+        return GAT(
+            num_layers=conf["num_layers"],
+            input_dim=conf["feat_dim"],
+            hidden_dim=conf["hidden_dim"],
+            output_dim=conf["prompts_dim"],
+            dropout_ratio=conf["dropout_ratio"],
+            activation=F.relu,
+            norm_type=conf["norm_type"],
+            attn_drop=conf["attn_dropout_ratio"],
+        ).to(conf["device"])
+    elif "APPNP" in conf["model_name"]:
+        return APPNP(
+            num_layers=conf["num_layers"],
+            input_dim=conf["feat_dim"],
+            hidden_dim=conf["hidden_dim"],
+            output_dim=conf["prompts_dim"],
+            dropout_ratio=conf["dropout_ratio"],
+            activation=F.relu,
+            norm_type=conf["norm_type"],
+        ).to(conf["device"])
