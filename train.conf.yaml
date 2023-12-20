@@ -292,6 +292,7 @@ ogbn-arxiv:
     weight_decay: 0
     norm_type: layer
     fan_out: 15,10,5
+    batch_size: 4096
 
   GA1SAGE:
     num_layers: 3

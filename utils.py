@@ -130,8 +130,8 @@ def graph_split(idx_train, idx_val, idx_test, rate, seed):
 
 def get_evaluator(dataset, baseline=False):
     def evaluator(model, logits, labels):
-        logits_n = F.normalize(logits)
-        pred = (logits_n @ model.prompts.mT).argmax(dim=1)
+        embeddings = F.normalize(logits) * model.prompts
+        pred = (embeddings @ model.prototypes.T).argmax(dim=1)
         return pred.eq(labels).float().mean().item()
     def evaluator_balseline(model, logits, labels):
         pred = logits.argmax(dim=1)

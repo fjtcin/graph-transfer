@@ -174,7 +174,7 @@ def run(args):
 
     feats = g.ndata["feat"]
     args.feat_dim = feats.shape[1]
-    label_dim = labels.max().item() + 1
+    args.label_dim = labels.max().item() + 1
 
     if 0 < args.feature_noise <= 1:
         feats = (
@@ -191,7 +191,7 @@ def run(args):
 
     """ Model init """
     model = Model(conf)
-    model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
+    model.prompts = torch.nn.Parameter(torch.randn(1, conf["prompts_dim"]).to(device))
     model.p = torch.nn.Parameter(torch.ones(1, conf["feat_dim"]).to(device), requires_grad=False)
     logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
     optimizer = optim.Adam(
