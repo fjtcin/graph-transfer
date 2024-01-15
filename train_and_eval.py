@@ -6,17 +6,16 @@ import torch.nn.functional as F
 
 
 def get_prototypes(model, dataloader, conf):
-    model.prototypes = torch.zeros(conf["label_dim"], model.prompts.shape[1]).to(conf["device"])
+    model.prototypes = torch.zeros(conf["num_classes"], conf["label_dim"]).to(conf["device"])
     for input_nodes, output_nodes, blocks in dataloader:
         input_features = blocks[0].srcdata['feat']
         output_labels = blocks[-1].dstdata['label']
         logits = model(blocks, input_features * model.p)
-        embeddings = F.normalize(logits) * model.prompts
 
         num_batch_nodes = len(output_nodes)
-        mask = torch.zeros(conf["label_dim"], num_batch_nodes).to(conf["device"])
+        mask = torch.zeros(conf["num_classes"], num_batch_nodes).to(conf["device"])
         mask[output_labels, torch.arange(num_batch_nodes)] = 1
-        sum_features_for_each_label = mask @ embeddings
+        sum_features_for_each_label = mask @ logits
 
         model.prototypes += sum_features_for_each_label
     model.prototypes = F.normalize(model.prototypes)
