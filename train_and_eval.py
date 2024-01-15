@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 def get_prototypes(model, dataloader, conf):
     model.prototypes = torch.zeros(conf["label_dim"], model.prompts.shape[1]).to(conf["device"])
-    count_nodes_for_each_label = torch.zeros(conf["label_dim"], 1).to(conf["device"])
     for input_nodes, output_nodes, blocks in dataloader:
         input_features = blocks[0].srcdata['feat']
         output_labels = blocks[-1].dstdata['label']
@@ -18,10 +17,9 @@ def get_prototypes(model, dataloader, conf):
         mask = torch.zeros(conf["label_dim"], num_batch_nodes).to(conf["device"])
         mask[output_labels, torch.arange(num_batch_nodes)] = 1
         sum_features_for_each_label = mask @ embeddings
-        count_nodes_for_each_label += torch.sum(mask, dim=1, keepdim=True)
 
         model.prototypes += sum_features_for_each_label
-    model.prototypes /= count_nodes_for_each_label
+    model.prototypes = F.normalize(model.prototypes)
 
 
 def train(model, dataloader, criterion, evaluator, optimizer, conf):
