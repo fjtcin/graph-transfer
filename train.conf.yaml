@@ -7,6 +7,7 @@ global:
   batch_size: 512
   learning_rate: 0.01
   weight_decay: 0.0005
+  fan_out: 5,5
 
 
 cora:
@@ -67,6 +68,12 @@ citeseer:
     dropout_ratio: 0
     weight_decay: 0.0005
 
+  GAT_ogbn-arxiv:
+    dropout_ratio: 0.6
+    weight_decay: 0.01
+    num_heads: 8
+    attn_dropout_ratio: 0.3
+
   SAGE_ogbn-arxiv:
     num_layers: 3
     hidden_dim: 256
@@ -110,6 +117,12 @@ pubmed:
     learning_rate: 0.01
     dropout_ratio: 0
     weight_decay: 0.0005
+
+  GAT_ogbn-arxiv:
+    dropout_ratio: 0.6
+    weight_decay: 0.01
+    num_heads: 8
+    attn_dropout_ratio: 0.3
 
   SAGE_ogbn-arxiv:
     num_layers: 3
