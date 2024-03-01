@@ -85,10 +85,7 @@ def get_args():
     )
     parser.add_argument("--model", type=str, default="SAGE")
     parser.add_argument(
-        "--prompts_dim", type=int, default=256, help="Model prompts dimensions"
-    )
-    parser.add_argument(
-        "--dataset_base_prompts", type=int, default=40, help="Number of prompts in dataset_base"
+        "--label_dim", type=int, default=256, help="Model label dimensions"
     )
 
     """Optimization"""
@@ -224,7 +221,7 @@ def run(args):
 
     feats = g.ndata["feat"]
     args.feat_dim = feats.shape[1]
-    label_dim = labels.max().item() + 1
+    args.num_classes = labels.max().item() + 1
 
     if 0 < args.feature_noise <= 1:
         feats = (
@@ -243,14 +240,11 @@ def run(args):
 
     """ Model init """
     model = Model(conf)
-    model.prompts = torch.nn.Parameter(torch.empty(conf["dataset_base_prompts"], conf["prompts_dim"]).to(device))
     model.p = torch.nn.Parameter(torch.empty(1, conf["feat_dim"]).to(device))
     model.load_state_dict(torch.load(model_dir / "model.pth"))
     for param in model.parameters():
         param.requires_grad = False
-    model.prompts = torch.nn.Parameter(torch.randn(label_dim, conf["prompts_dim"]).to(device))
     model.p = torch.nn.Parameter(torch.ones(1, conf["feat_dim"]).to(device))
-    logger.info(f"prompts.requires_grad = {model.prompts.requires_grad}, p.requires_grad = {model.p.requires_grad}")
     optimizer = optim.Adam(
         model.parameters(), lr=conf["learning_rate"], weight_decay=conf["weight_decay"]
     )
