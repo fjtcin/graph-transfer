@@ -31,31 +31,12 @@ cora:
     norm_type: layer
     fan_out: 15,10,5
 
-  GA1SAGE:
-    fan_out: 5,5
-    learning_rate: 0.01
-    dropout_ratio: 0
-    weight_decay: 0.0005
-
   MLP:
     learning_rate: 0.01
     weight_decay: 0.005
     dropout_ratio: 0.6
 
-  GA1MLP:
-    learning_rate: 0.01
-    weight_decay: 0.005
-    dropout_ratio: 0.6
-
   MLP_ogbn-arxiv:
-    num_layers: 3
-    hidden_dim: 1024
-    learning_rate: 0.01
-    weight_decay: 0
-    dropout_ratio: 0.3
-    norm_type: layer
-
-  GA1MLP_ogbn-arxiv:
     num_layers: 3
     hidden_dim: 1024
     learning_rate: 0.01
@@ -95,12 +76,6 @@ citeseer:
     norm_type: layer
     fan_out: 15,10,5
 
-  GA1SAGE:
-    fan_out: 5,5
-    learning_rate: 0.01
-    dropout_ratio: 0
-    weight_decay: 0.0005
-
   GCN:
     hidden_dim: 64
     dropout_ratio: 0.8
@@ -111,20 +86,7 @@ citeseer:
     weight_decay: 0.001
     dropout_ratio: 0.1
 
-  GA1MLP:
-    learning_rate: 0.01
-    weight_decay: 0.001
-    dropout_ratio: 0.1
-
   MLP_ogbn-arxiv:
-    num_layers: 3
-    hidden_dim: 1024
-    learning_rate: 0.01
-    weight_decay: 0
-    dropout_ratio: 0.3
-    norm_type: layer
-
-  GA1MLP_ogbn-arxiv:
     num_layers: 3
     hidden_dim: 1024
     learning_rate: 0.01
@@ -167,14 +129,6 @@ pubmed:
     learning_rate: 0.005
     weight_decay: 0
     dropout_ratio: 0.4
-
-  GA1MLP_ogbn-arxiv:
-    num_layers: 3
-    hidden_dim: 1024
-    learning_rate: 0.01
-    weight_decay: 0
-    dropout_ratio: 0.3
-    norm_type: layer
 
   GAT:
     dropout_ratio: 0.6
@@ -255,33 +209,11 @@ ogbn-arxiv:
     num_heads: 8
     attn_dropout_ratio: 0.3
 
-  GA1MLP:
-    num_layers: 3
-    hidden_dim: 1024  # 256 default
-    learning_rate: 0.01
-    weight_decay: 0  # 0.005
-    dropout_ratio: 0.3  # 0.6  # 0.2 default
-    norm_type: layer
-
   MLP3w4:
     num_layers: 3
     hidden_dim: 1024
     weight_decay: 0
     dropout_ratio: 0.5
-    norm_type: batch
-
-  # GA1MLP:
-  #   num_layers: 3
-  #   hidden_dim: 256
-  #   weight_decay: 0
-  #   dropout_ratio: 0.2
-  #   norm_type: batch
-
-  GA1MLP3w4:
-    num_layers: 3
-    hidden_dim: 1024
-    weight_decay: 0
-    dropout_ratio: 0.2
     norm_type: batch
 
   SAGE:
@@ -293,15 +225,6 @@ ogbn-arxiv:
     norm_type: layer
     fan_out: 15,10,5
     batch_size: 4096
-
-  GA1SAGE:
-    num_layers: 3
-    hidden_dim: 256
-    dropout_ratio: 0.2
-    learning_rate: 0.01
-    weight_decay: 0
-    norm_type: batch
-    fan_out: 5,10,15
 
 ogbn-products:
   MLP:
@@ -327,7 +250,7 @@ ogbn-products:
     learning_rate: 0.003
     weight_decay: 0
     norm_type: batch
-    fan_out: 5,10,15
+    fan_out: 15,10,5
     batch_size: 4096
 
 pokec:

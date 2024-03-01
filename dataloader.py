@@ -67,6 +67,9 @@ def load_ogb_data(dataset, dataset_path):
         g.add_edges(dsts, srcs)
         g = g.add_self_loop().to_simple()
 
+    if dataset == "ogbn-products":
+        g = g.add_self_loop().to_simple()
+
     assert has_all_reversed_edges(g) and has_self_loop_every_node(g) and is_not_multigraph(g), 'failed graph check'
     return g, labels, idx_train, idx_val, idx_test
 
